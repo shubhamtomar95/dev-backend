@@ -42,8 +42,6 @@ Below are the **types of issues** you need to identify and fix:
 - ❌ **Type mismatch** → Incorrect data types assigned to variables.
 - ❌ **Unhandled Exception** → Exceptions that must be caught or declared.
 
-✅ **Fix**: Ensure correct method names, proper type assignments, and handle exceptions properly.
-
 ---
 
 ### **2️⃣ Runtime Errors (Exceptions & Bugs)**
@@ -51,23 +49,17 @@ Below are the **types of issues** you need to identify and fix:
 - ❌ **NumberFormatException** → Invalid string conversion to a number.
 - ❌ **ConcurrentModificationException** → A collection is modified by multiple threads.
 
-✅ **Fix**: Add proper null checks, exception handling, and use thread-safe collections.
-
 ---
 
 ### **3️⃣ Concurrency & Threading Issues**
 - ❌ **Race conditions** → Multiple threads modifying shared data without synchronization.
 - ❌ **Deadlocks** → Two threads waiting on each other’s locks.
 
-✅ **Fix**: Use `ConcurrentHashMap`, `ReentrantLock`, and avoid nested locks.
-
 ---
 
 ### **4️⃣ Performance & Resource Management Issues**
 - ❌ **Infinite loops** → Some loops run indefinitely without an exit condition.
 - ❌ **Resource leaks** → Scanner objects are not closed properly.
-
-✅ **Fix**: Add termination conditions and use **try-with-resources** for cleanup.
 
 ---
 
@@ -85,7 +77,7 @@ You will be evaluated based on:
 - Add any **assumptions, challenges overcome, or note-worthy aspects** of your solution in an **ASSUMPTIONS.md** file.
 - Commit your changes to your own **GitHub profile (or another public repository)** and share the link with the person who provided this assessment.
 - Include the **number of hours** you invested in the assessment in your submission.
-- **Please do not spend more than 8 hours** on this assessment.
+- **Please do not spend more than 2 hours** on this assessment.
 
 ---
 
