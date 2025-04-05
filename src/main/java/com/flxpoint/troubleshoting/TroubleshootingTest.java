@@ -1,11 +1,16 @@
 package com.flxpoint.troubleshoting;
 
+import lombok.extern.slf4j.Slf4j;
+
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
-
+@Slf4j
 public class TroubleshootingTest {
-    private static final ExecutorService executor = Executors.newFixedThreadPool(2);
-    private static final Map<String, Integer> sharedData = new HashMap<>();
+    private static int cpuCount = Runtime.getRuntime().availableProcessors();
+    private static final ExecutorService executor = Executors.newFixedThreadPool(cpuCount - 1);
+    private static final ExecutorService infiniteLoopExecutor = Executors.newSingleThreadExecutor();
+    private static final Map<String, Integer> sharedData = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
         TroubleshootingTest test = new TroubleshootingTest();
@@ -14,7 +19,6 @@ public class TroubleshootingTest {
 
     public void runTest() {
         List<Future<Integer>> results = new ArrayList<>();
-
         results.add(executor.submit(() -> updateSharedData("key1")));
         results.add(executor.submit(() -> updateSharedData("key1")));
 
@@ -29,36 +33,56 @@ public class TroubleshootingTest {
 
         executor.submit(() -> missingMethod());
 
-        String num = 100;
+        String num = "100";
 
-        executor.submit(() -> methodThrowsException());
-
-        executor.submit(this::infiniteLoop);
+        executor.submit(() -> {
+            try {
+                methodThrowsException();
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+                System.err.println("An Exception occured: " + e.getMessage());
+            }
+        });
+        infiniteLoopExecutor.submit(this::infiniteLoop);
 
         executor.submit(this::unclosedScanner);
 
         executor.shutdown();
+        infiniteLoopExecutor.shutdown();
     }
 
+    private void missingMethod() {}
+
     private Integer updateSharedData(String key) {
-        int currentValue = sharedData.getOrDefault(key, 0);
-        sharedData.put(key, currentValue + 1);
-        return currentValue + 1;
+        return sharedData.merge(key, 1, Integer::sum);
     }
 
     private Integer causeNullPointer() {
         String str = null;
-        return str.length();
+        return Optional.ofNullable(str)
+                .map(s -> s.length())
+                .orElse(0);
     }
 
     private Integer parseInteger(String value) {
-        return Integer.parseInt(value);
+        return Optional.ofNullable(value)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .filter(s -> s.matches("-?\\d+"))
+                .map(Integer::parseInt)
+                .orElse(null);
     }
 
     private void deadlockMethod(Object lock1, Object lock2) {
-        synchronized (lock1) {
+        int hashA = System.identityHashCode(lock1);
+        int hashB = System.identityHashCode(lock2);
+
+        Object firstLock = hashA <= hashB ? lock1 : lock2;
+        Object secondLock = hashA <= hashB ? lock2 : lock1;
+
+        synchronized (firstLock) {
             try { Thread.sleep(50); } catch (InterruptedException ignored) {}
-            synchronized (lock2) {
+            synchronized (secondLock) {
                 System.out.println("Acquired both locks");
             }
         }
@@ -69,10 +93,16 @@ public class TroubleshootingTest {
     }
 
     private void unclosedScanner() {
-        Scanner scanner = new Scanner(System.in);
-        System.out.println("Enter something: ");
-        String input = scanner.nextLine();
-        System.out.println("You entered: " + input);
+        Scanner scanner = new Scanner(System.in);;
+        try {
+            System.out.println("Enter something: ");
+            String input = scanner.nextLine();
+            System.out.println("You entered: " + input);
+        }catch(NoSuchElementException | IllegalStateException e) {
+            log.error(e.getMessage(), e);
+        }finally {
+            scanner.close();
+        }
     }
 
     private void methodThrowsException() throws Exception {
